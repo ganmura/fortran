@@ -1,0 +1,116 @@
+!-----------------------------------------------------------------------
+!   Heat conduction: an implicit method (Euler -- Centered Difference)
+!
+!   coded by Shigeo Yoden on Sept. 12, 2000
+!-----------------------------------------------------------------------
+program cond_imp
+
+!  use dcl        ! DCL Fortran90 (dcl-5.1/dcl-f90)
+
+  integer, parameter :: jmax=1000, mmax=10
+  real,    parameter :: xmax=0.5, tmax=1.0
+  real,    parameter :: rkappa=0.14
+  real, dimension(0:jmax) :: x, u
+  real, dimension(0:jmax,0:mmax) :: v
+  real, dimension(1:jmax-1) :: a, b, c
+  character :: ct*30, cl*6, csgi*1
+
+!!!    write(*,*) 'dx=?;   dt=? '
+!!!    read (*,*)  dx, dt
+    dx = 5.e-3;  dt = 1.e-3
+
+    imax = xmax/dx
+    nmax = tmax/dt;    ndel = nmax/mmax
+    if(imax > jmax) stop 'error: dx must have a larger value'
+
+!-- 初期条件 ----
+    u = 100
+    u(0) = 0;  u(imax) = 0      ! 実験(1)：両端が 0 度
+
+    do i=0, imax
+      x(i) = i*dx
+      v(i,0) = u(i)
+    end do
+    mm = 0
+
+!-- 時間積分 ----
+    r = dt*rkappa/dx**2  ! 熱伝導係数
+    a = - r
+    b = 1 + 2*r
+    c = - r
+    do n=1, nmax
+      call tridiag(u(1))
+
+      if(mod(n,ndel) == 0) then
+        mm = mm + 1
+        v(0:imax,mm) = u
+      end if
+    end do
+
+!-- グラフ化 ----
+!    call DclOpenGraphics()
+!   call graph
+!    call DclCloseGraphics
+
+!-- 内部手続き ----
+  contains
+    subroutine tridiag(f)         ! 3重対角連立方程式を解く内部サブルーチン
+!
+!-- Durran(1999) pp.440;  Thomas tridiagonal algorism
+! Solves a standard tridiagonal system
+!
+! Definition of the variables
+!   jmax = dimension of all the following arrays  <==> imax-1
+!   a    = sub(lower) diagonal
+!   b    = center diagonal
+!   c    = super(upper) diagonal
+!   f    = right hand side
+!   q    = work array provided by calling program
+!
+!   a(1) and c(jmax) need not be initialized
+! The output is in f; a, b, c are unchanged
+! 両端の境界条件は 0 のみ ?
+
+  real, dimension(1:imax-1) :: f, q
+
+      c(imax-1) = 0.
+
+! Forward elimination sweep
+      q(1) = - c(1)/b(1)
+      f(1) =   f(1)/b(1)
+      do j=2, imax-1
+        p = 1./(b(j) + a(j)*q(j-1))
+        q(j) = - c(j)*p
+        f(j) = (f(j) - a(j)*f(j-1))*p
+      end do
+
+! Backword pass
+      do j=imax-2, 1, -1
+        f(j) = f(j) + q(j)*f(j+1)
+      end do
+    end subroutine tridiag
+
+!    subroutine graph              ! グラフを描く内部サブルーチン
+!      call DclNewFrame
+      
+!      call DclSetTitle('x', 'temperature', 'cm', '|'//csgi(4)//'"C')
+!      call DclDrawScaledGraph(x(0:imax), v(0:imax,0))
+
+!      call DclSetParm('ENABLE_LINE_LABELING', .true.)
+!      call DclSetParm('LINE_CYCLE_LENGTH', 45.)
+!      call DclSetLineTextSize(0.018)
+!      cl = 't=?.?s'
+!      do m=1,mm
+!          write(cl(3:5),'(f3.1)') ndel*m*dt
+!        call DclSetLineText(cl)
+!          if(m == 6) call DclSetParm('ENABLE_LINE_LABELING', .false.)
+!        call DclDrawLine(x(0:imax), v(0:imax,m))
+!      end do
+
+!        ct = 'dt=??.??E???s'
+!        write(ct(4:12),'(e9.2)') dt
+!      call DclDrawTitle('t', ct, position=-0.8)
+!      call DclDrawTitle('t', ' implicit method(Euler-C.D.)', position=-1.)
+!      call DclDrawTitle('t', 'Heat Conduction Equation:', position=-1.)
+!    end subroutine graph
+end program cond_imp

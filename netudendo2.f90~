@@ -1,0 +1,73 @@
+!
+! Create by Minowa. M
+! 前方オイラー型
+! 計算不安定を示すプログラム
+program netudendo2
+
+	implicit none
+	integer, parameter :: dp = kind(1.0d0)
+	integer, parameter :: m = 101
+	real(dp) T(m) 	! Ti^n-1 (i = 1,...,m) 
+	real(dp) Tn(m)	! Ti^n (i=1,...,m)
+	
+	! 変数の値を定義
+	integer i, j
+	real(dp) dt, dx 
+	real(dp) T0, Tm, T1
+	real(dp) k, h
+	real(dp) r
+	!
+	k = 1.0d0-3    ! 熱伝導率
+	h = 10 	 !
+	T0 = 0.0d0 	 !
+	T1 = 1.0d0
+	T = T0
+	dx = h / (m - 1)
+	dt = 0.505d0 * dx * dx / k	! 
+	Tm = 1
+	
+	! 初期条件のループ
+	do i = 1, m
+		T(i) = T0
+	end do
+	
+	! 境界条件
+!	T(1) = T1
+	T(m) = T0
+	
+	! 
+	r = k * dt / dx**2
+	!
+	do j = 1, 900
+	
+	! 境界条件
+	! T(1) = sin(j)
+	
+		! print *, T
+		do i = 2, m-1
+		
+			Tn(i) = T(i) + r * (T(i+1)+T(i-1)-2.0d0*T(i))
+		
+		end do	
+
+		Tn(1) = T1
+		Tn(m) = T0
+		
+		do i = 1, m
+			T(i) = Tn(i)
+		end do
+		! 出力
+		if (mod(j,30)==0) then
+			do i = 1, m
+				print *, i, Tn(i)
+			end do
+		print *
+		end if
+		
+	end do
+! 出力
+!	do i = 1, m
+!		print *, i, Tn(i)
+!	end do
+
+end program netudendo2
